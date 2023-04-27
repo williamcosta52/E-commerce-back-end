@@ -4,6 +4,7 @@ import { MongoClient } from "mongodb"
 import dotenv from "dotenv"
 import joi from "joi"
 import bcrypt from "bcrypt"
+import  {v4 as uuid} from "uuid"
 
 //Criação do servidor
 const app = express()
@@ -75,6 +76,32 @@ catch(err){
 }
 })
 
+app.post("/login", async (req, res) => {
+    const {email, password} = req.body
+    try{
+        const loginUser = await db.collection("users").findOne({email})
+        if  (!loginUser) return res.status(404).send("E-mail não cadastrado")
+        const verifyPassword = bcrypt.compareSync(password, loginUser.password)
+        if (!verifyPassword) return res.status(401).send("Senha incorreta")
+        const token = uuid()
+        await db.collection("sessions").insertOne({idUser: loginUser._id, name: loginUser.name, token})
+        const sucessLogin = {name: loginUser.name, token: token}
+        return res.status(200).send(sucessLogin)
+    }
+    catch(err){
+        res.status(500).send(err.message)
+    }
+})
+
+app.get("/login", async (req, res) => {
+    try{
+        const usersLogins = await db.collection("sessions").find().toArray()
+        return res.status(200).send(usersLogins)
+    }
+    catch(err){
+        res.status(500).send(err.message)
+    }
+})
 
 
 

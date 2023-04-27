@@ -4,7 +4,7 @@ import { MongoClient } from "mongodb"
 import dotenv from "dotenv"
 import joi from "joi"
 import bcrypt from "bcrypt"
-import  {v4 as uuid} from "uuid"
+import { v4 as uuid } from "uuid"
 
 //Criação do servidor
 const app = express()
@@ -28,7 +28,7 @@ const db = mongoClient.db()
 //Endpoints 
 
 app.post("/singup", async (req, res) => {
-    const {name, email, password, age} = req.body
+    const { name, email, password, age } = req.body
     const singUpSchema = joi.object({
         name: joi.string().required(),
         email: joi.string().email().required(),
@@ -42,9 +42,9 @@ app.post("/singup", async (req, res) => {
         return res.status(422).send(errors)
     }
     const hash = bcrypt.hashSync(password, 10)
-    const newUser = {name, email, password: hash, age}
+    const newUser = { name, email, password: hash, age }
     try {
-        const emailUsed = await db.collection("users").findOne({email})
+        const emailUsed = await db.collection("users").findOne({ email })
         if (emailUsed) return res.status(409).send("Esse email já está cadastrado")
         await db.collection("users").insertOne(newUser)
         return res.sendStatus(201)
@@ -65,45 +65,89 @@ app.get("/singup", async (req, res) => {
 })
 
 app.delete("/singup/:email", async (req, res) => {
-const {email} = req.params
-try{
-    const deleted = await db.collection("users").deleteOne({email})
-    if (deleted.deletedCount === 0) return res.status(404).send("Esse item não existe!")
-    return res.status(200).send(`Participante com email ${email} deletado com sucesso!`)
-}
-catch(err){
-    res.status(500).send(err.message)
-}
+    const { email } = req.params
+    try {
+        const deleted = await db.collection("users").deleteOne({ email })
+        if (deleted.deletedCount === 0) return res.status(404).send("Esse item não existe!")
+        return res.status(200).send(`Participante com email ${email} deletado com sucesso!`)
+    }
+    catch (err) {
+        res.status(500).send(err.message)
+    }
 })
 
 app.post("/login", async (req, res) => {
-    const {email, password} = req.body
-    try{
-        const loginUser = await db.collection("users").findOne({email})
-        if  (!loginUser) return res.status(404).send("E-mail não cadastrado")
+    const { email, password } = req.body
+    try {
+        const loginUser = await db.collection("users").findOne({ email })
+        if (!loginUser) return res.status(404).send("E-mail não cadastrado")
         const verifyPassword = bcrypt.compareSync(password, loginUser.password)
         if (!verifyPassword) return res.status(401).send("Senha incorreta")
         const token = uuid()
-        await db.collection("sessions").insertOne({idUser: loginUser._id, name: loginUser.name, token})
-        const sucessLogin = {name: loginUser.name, token: token}
+        await db.collection("sessions").insertOne({ idUser: loginUser._id, name: loginUser.name, token })
+        const sucessLogin = { name: loginUser.name, token: token }
         return res.status(200).send(sucessLogin)
     }
-    catch(err){
+    catch (err) {
         res.status(500).send(err.message)
     }
 })
 
 app.get("/login", async (req, res) => {
-    try{
+    try {
         const usersLogins = await db.collection("sessions").find().toArray()
         return res.status(200).send(usersLogins)
+    }
+    catch (err) {
+        res.status(500).send(err.message)
+    }
+})
+
+app.post("/van/stock", async (req, res) => {
+    const itemSchema = joi.object({
+        name: joi.string().required(),
+        category: joi.string().required(),
+        description: joi.string().required(),
+        price: joi.number().required(),
+        quantity: joi.number().required(),
+        image: joi.required()
+    })
+    const validation = itemSchema.validate(req.body, { abortEarly: false })
+    if (validation.error) return res.status(422).send(validation.error)
+
+    const newItem = req.body
+    try {
+        const itemAlreadyOnStock = await db.collection("stock").findOne({ name: newItem.name })
+        if (itemAlreadyOnStock) return res.status(409).send(`${newItem.name} já está no estoque!`)
+        await db.collection("stock").insertOne(newItem)
+        return res.status(200).send(`${newItem.name} adicionado ao estoque!`)
+    }
+    catch (err) {
+        res.status(500).send(err.message)
+    }
+})
+
+app.get("/van/stock", async (req, res) => {
+    try {
+        const stock = await db.collection("stock").find().toArray()
+        return res.status(200).send(stock)
+    }
+    catch (err) {
+        res.status(500).send(err.message)
+    }
+})
+
+app.delete("/van/stock/:name", async (req, res)=>{
+    const { name } = req.params
+    try{
+        const deleted = await db.collection("stock").deleteOne({ name })
+        if (deleted.deletedCount === 0) return res.status(404).send("Esse item não existe!")
+        return res.status(200).send(`Item ${name} retirado do estoque!`)
     }
     catch(err){
         res.status(500).send(err.message)
     }
 })
-
-
 
 //Deixar o app escutante
 const PORT = 5000

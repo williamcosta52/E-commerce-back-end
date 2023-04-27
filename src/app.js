@@ -149,6 +149,28 @@ app.delete("/van/stock/:name", async (req, res)=>{
     }
 })
 
+app.get("/:category", async (req, res) => {
+const {category} = req.params
+    try {
+        const categoryItems = await db.collection("stock").find({category: category}).toArray()
+        return res.status(200).send(categoryItems)
+    }
+    catch (err) {
+        res.status(500).send(err.message)
+    }
+})
+
+app.get("/:category/:item", async (req, res) => {
+    const {category, name} = req.params
+        try {
+            const itemInCategory = await db.collection("stock").find({category},{name}).toArray()
+            return res.status(200).send(itemInCategory)
+        }
+        catch (err) {
+            res.status(500).send(err.message)
+        }
+    })
+
 //Deixar o app escutante
 const PORT = 5000
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`))

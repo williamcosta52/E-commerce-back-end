@@ -119,11 +119,39 @@ app.post("/van/stock", async (req, res) => {
     try {
         const itemAlreadyOnStock = await db.collection("stock").findOne({ name: newItem.name })
         if (itemAlreadyOnStock) return res.status(409).send(`${newItem.name} já está no estoque!`)
+        const categoryExists =  await db.collection("stock").findOne({category: newItem.category})
+        if (!categoryExists){ await db.collection("categories").insertOne({category: newItem.category})
         await db.collection("stock").insertOne(newItem)
-        return res.status(200).send(`${newItem.name} adicionado ao estoque!`)
+        return res.status(200).send(`${newItem.name} adicionado ao estoque! E categoria ${newItem.category} adicionada à coleção de categorias!`)}
+        else {
+            await db.collection("stock").insertOne(newItem)
+            return res.status(200).send(`${newItem.name} adicionado ao estoque!`)
+        }
     }
     catch (err) {
         res.status(500).send(err.message)
+    }
+})
+
+app.get("/categories", async(req, res)=> {
+    try{
+        const categories = await db.collection("categories").find().toArray()
+        return res.status(200).send(categories)
+    }
+    catch(err){
+        res.status(500).send(err.message)
+    }
+})
+
+app.delete("/categories/:category", async(req, res)=> {
+    const { category } = req.params
+    try{
+const deleted = await db.collection("categories").deleteOne({category})
+if (deleted.deletedCount === 0) return res.status(404).send("Essa categoria não existe!")
+        return res.status(200).send(`Categoria ${category} retirada da coleção!`)
+    }
+    catch(err){
+  res.status(500).send(err.message)
     }
 })
 
@@ -161,9 +189,9 @@ const {category} = req.params
 })
 
 app.get("/:category/:item", async (req, res) => {
-    const {category, name} = req.params
+    const {category, item} = req.params
         try {
-            const itemInCategory = await db.collection("stock").find({category},{name}).toArray()
+            const itemInCategory = await db.collection("stock").findOne({category, name: item})
             return res.status(200).send(itemInCategory)
         }
         catch (err) {

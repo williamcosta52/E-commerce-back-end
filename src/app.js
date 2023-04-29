@@ -30,9 +30,9 @@ const db = mongoClient.db()
 app.post("/signup", async (req, res) => {
     const { name, email, password, age } = req.body
     const singUpSchema = joi.object({
-        name: joi.string().required(),
-        email: joi.string().email().required(),
-        password: joi.string().required().min(3),
+        name: joi.required(),
+        email: joi.required(),
+        password: joi.required(),
         age: joi.number().required()
     })
 

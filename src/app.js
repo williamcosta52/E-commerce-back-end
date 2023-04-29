@@ -27,7 +27,7 @@ const db = mongoClient.db()
 
 //Endpoints 
 
-app.post("/singup", async (req, res) => {
+app.post("/signup", async (req, res) => {
     const { name, email, password, age } = req.body
     const singUpSchema = joi.object({
         name: joi.string().required(),
@@ -54,7 +54,7 @@ app.post("/singup", async (req, res) => {
     }
 })
 
-app.get("/singup", async (req, res) => {
+app.get("/signup", async (req, res) => {
     try {
         const users = await db.collection("users").find().toArray()
         return res.status(200).send(users)
@@ -64,7 +64,7 @@ app.get("/singup", async (req, res) => {
     }
 })
 
-app.delete("/singup/:email", async (req, res) => {
+app.delete("/signup/:email", async (req, res) => {
     const { email } = req.params
     try {
         const deleted = await db.collection("users").deleteOne({ email })

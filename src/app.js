@@ -149,6 +149,7 @@ app.post("/home/cart", async (req, res) => {  //ADICIONA ITENS AO CARRINHO DO US
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '')
 
+	if (!token) return res.status(401).send(`Faça login para adicionar itens ao carrinho`);
 const {name, category, price, quantity, image } = req.body
 
     try{
@@ -173,7 +174,7 @@ return res.status(200).send(`Item ${name} adicionado ao carrinho de ${thisUser.n
 app.get("/home/cart/show", async (req, res) => { //LISTA OS ITENS DO CARRINHO DO USUARIO DE ACOROD COM O TOKEN
     const { authorization } = req.headers;
     const token = authorization?.replace('Bearer ', '')
-
+	if (!token) return res.status(401).send(`Faça login para ver o seu carrinho`);
     try{
         const thisUser = await db.collection("sessions").findOne({token})
         const cartShow = await db.collection("userCart").find({idUser: thisUser.idUser}).toArray()

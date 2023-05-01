@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import joi from "joi";
 import bcrypt from "bcrypt";
 import { v4 as uuid } from "uuid";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 const app = express();
 
@@ -184,6 +184,20 @@ app.get("/home/cart/show", async (req, res) => { //LISTA OS ITENS DO CARRINHO DO
 	}
 })
 
+app.delete("/home/cart/delete/:id", async (req, res) => {
+    const { id } = req.params;
+	const { authorization } = req.headers;
+    const token = authorization?.replace('Bearer ', '')
+		try{
+			const thisUser = await db.collection("sessions").findOne({token})
+			const deleteItem= await db.collection("userCart").deleteOne({idUser: thisUser.idUser, _id: new ObjectId(id)})
+			return res.status(200).send(`${deleteItem.deletedCount} item deletado do carrinho`)
+    }
+    catch (err) {
+		res.status(500).send(err.message);
+	}
+})
+
 
 
 
@@ -253,18 +267,6 @@ app.delete("/categories/:category", async (req, res) => { //APAGA CATEGORIA E OS
 });
 
 
-app.delete("/home/cart/show/:name", async (req, res) => {
-    const { name } = req.params;
-    try{
-        const deleted = await db.collection("userCart").deleteMany({ name });
-		if (deleted.deletedCount === 0)
-			return res.status(404).send("Esse item não existe!");
-		return res.status(200).send(`Item ${name} retirado do carrinho`);
-    }
-    catch (err) {
-		res.status(500).send(err.message);
-	}
-})
 
 const PORT = 5000;
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
